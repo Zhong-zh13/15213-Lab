@@ -203,7 +203,10 @@ int negate(int x) {
  *   Rating: 3
  */
 int isAsciiDigit(int x) {
-  return 2;
+	int prefix = x&(~15);
+	int validPre = !(prefix+(~0x30+1)); // the prefix (top 28 bits) must equal to 0x30
+	int validTail = (!(x&8))|(!(x&6)); // valid tail: either x&8==0 or x&6==0 
+  return validPre&validTail;
 }
 /* 
  * conditional - same as x ? y : z 
@@ -213,7 +216,13 @@ int isAsciiDigit(int x) {
  *   Rating: 3
  */
 int conditional(int x, int y, int z) {
-  return 2;
+  int u = !(!x);
+  int u2 = u|(u<<1); // two 1's
+  u2 = u2|(u2<<2); // four 1's
+  u2 = u2|(u2<<4); // eight 1's
+  u2 = u2|(u2<<8); // sixteen 1's
+  u2 = u2|(u2<<16); // thirty-two 1's
+	return (u2&y)|((~u2)&z);
 }
 /* 
  * isLessOrEqual - if x <= y  then return 1, else return 0 
@@ -223,7 +232,17 @@ int conditional(int x, int y, int z) {
  *   Rating: 3
  */
 int isLessOrEqual(int x, int y) {
-  return 2;
+	// general idea: x<=y <=> y-x>=0
+	// in case y = Tmin, x = Tmax, overflow
+	// in case y = Tmax, x = Tmin, alos overflow
+	// (!(y<0<=x))&((y>=0>x)|(y-x>=0))
+	int yNeg = (y&(1<<31));
+	int xPos = !(x&(1<<31));
+	int yMinusx = y+((~x)+1);
+	int yPos = !(y&(1<<31));
+	int xNeg = !(!(x&(1<<31)));
+	int yBigx = !(yMinusx&(1<<31));
+  return ((!yNeg)|(!xPos))&((yPos&xNeg)|yBigx);
 }
 //4
 /* 
@@ -235,7 +254,12 @@ int isLessOrEqual(int x, int y) {
  *   Rating: 4 
  */
 int logicalNeg(int x) {
-  return 2;
+  // x!=0 <=> either x<0 or -x<0
+  // becuase it's arithmatic right shift, need extra &1 to eliminate the copied highset 1 (for negative)
+  int pos = 1&(((~x)+1)>>31);
+  int neg = 1&(x>>31);
+	
+	return (pos|neg)^1;
 }
 /* howManyBits - return the minimum number of bits required to represent x in
  *             two's complement
@@ -250,6 +274,7 @@ int logicalNeg(int x) {
  *  Rating: 4
  */
 int howManyBits(int x) {
+	// guess: for a t>0, howManyBits(t) = howManyBits(-t)
   return 0;
 }
 //float
